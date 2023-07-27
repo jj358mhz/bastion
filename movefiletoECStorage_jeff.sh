@@ -135,6 +135,11 @@ echo "2) 20000 kbits/s"
 echo "3) 30000 kbits/s"
 echo "4) 40000 kbits/s"
 echo "5) 50000 kbits/s"
+echo "6) 60000 kbits/s"
+echo "7) 70000 kbits/s"
+echo "8) 80000 kbits/s"
+echo "9) 90000 kbits/s"
+echo "10) 100000 kbits/s"
 read -p "Enter the number of the speed option and press [ENTER]: " SpeedOption
 
 case $SpeedOption in
@@ -143,6 +148,11 @@ case $SpeedOption in
     3) Speed=30000 ;;
     4) Speed=40000 ;;
     5) Speed=50000 ;;
+    6) Speed=60000 ;;
+    7) Speed=70000 ;;
+    8) Speed=80000 ;;
+    9) Speed=90000 ;;
+    10) Speed=100000 ;;
     *) echo "Invalid speed option selected. Exiting." ; exit 1 ;;
 esac
 
