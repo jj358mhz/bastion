@@ -4,6 +4,53 @@
 CDNUser="jjohnston@edg.io@rsync.vny.EEA8.labcdn.com:"
 CDNDownloadURL="http://cdn.telcomjj.com"
 
+# Function to prompt the user to enter the server name
+prompt_server_name() {
+    valid_server_name=false
+    while [ "$valid_server_name" = false ]; do
+        read -p "Enter a three-digit number for the server name (e.g., 025) and press [ENTER]: " ServerNumber
+        re='^[0-9]{3}$'
+        if [[ $ServerNumber =~ $re ]]; then
+            valid_server_name=true
+            echo "Entered three-digit number: $ServerNumber"
+            echo ""
+        else
+            echo "Invalid input. Please enter a valid three-digit number."
+        fi
+    done
+
+    declare -a POP_LIST=("dxa" "dxc" "dxd" "fxa" "fxb" "fxc" "fxd" "fxe" "mxe" "mxw")  # Add your POP names here
+    echo "Available POP options:"
+    for i in "${!POP_LIST[@]}"; do
+        echo "$((i+1)). ${POP_LIST[$i]}"
+    done
+
+    valid_pop=false
+    while [ "$valid_pop" = false ]; do
+        read -n 1 -p "Enter the number of the POP and press [ENTER]: " POPOption
+        echo ""  # Move to a new line after capturing the input character
+        case $POPOption in
+            [1-9])
+                if [ "$POPOption" -le "${#POP_LIST[@]}" ]; then
+                    POP="${POP_LIST[$((POPOption-1))]}"
+                    valid_pop=true
+                    echo "Selected POP: $POP"
+                    echo ""
+                else
+                    echo "Invalid input. Please enter a valid number from the list."
+                fi
+                ;;
+            *)
+                echo "Invalid input. Please enter a valid number from the list."
+                ;;
+        esac
+    done
+
+    FullServerName="slce${ServerNumber}.${POP}"
+    echo "The generated FullServerName is: $FullServerName"
+    echo ""
+}
+
 # Get user identity and remove unwanted characters from the username
 User=$(whoami | awk -F '\\' '{print $2}' | tr -d '\r')
 echo "The user is: $User"
@@ -40,54 +87,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     done
 
     if [ "$Option" -eq 1 ]; then
-        # Prompt the user to enter the three-digit number for the server name
-        valid_number=false
-        while [ "$valid_number" = false ]; do
-            read -p "Enter a three-digit number for the server name (e.g., 025) and press [ENTER]: " ServerNumber
-            re='^[0-9]{3}$'
-            if [[ $ServerNumber =~ $re ]]; then
-                valid_number=true
-                echo "Entered three-digit number: $ServerNumber"
-                echo ""
-            else
-                echo "Invalid input. Please enter a valid three-digit number."
-            fi
-        done
-
-        # Prompt the user to select a POP from the available options
-        declare -a POP_LIST=("dxa" "dxc" "dxd" "fxa" "fxb" "fxc" "fxd" "fxe" "mxe" "mxw")  # Add your POP names here
-
-        echo "Available POP options:"
-        for i in "${!POP_LIST[@]}"; do
-            echo "$((i+1)). ${POP_LIST[$i]}"
-        done
-
-        valid_pop=false
-        while [ "$valid_pop" = false ]; do
-            read -n 1 -p "Enter the number of the POP and press [ENTER]: " POPOption
-            echo ""  # Move to a new line after capturing the input character
-            case $POPOption in
-                [1-9])
-                    if [ "$POPOption" -le "${#POP_LIST[@]}" ]; then
-                        POP="${POP_LIST[$((POPOption-1))]}"
-                        valid_pop=true
-                        echo "Selected POP: $POP"
-                        echo ""
-                    else
-                        echo "Invalid input. Please enter a valid number from the list."
-                    fi
-                    ;;
-                *)
-                    echo "Invalid input. Please enter a valid number from the list."
-                    ;;
-            esac
-        done
-
-        FullServerName="slce${ServerNumber}.${POP}"
-        echo "The generated FullServerName is: $FullServerName"
-        echo ""
+        prompt_server_name
     else
-        # Manually enter FullServerName
         read -p "Enter the FullServerName and press [ENTER]: " FullServerName
         echo "Manually entered FullServerName: $FullServerName"
         echo ""
@@ -96,16 +97,28 @@ fi
 
 echo "Entered server name: $FullServerName"
 
-read -p "Is this correct? [y/n]: " -n 1 -r
-echo ""
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-    echo "Proceeding with the entered server name."
-    echo ""
-else
-    echo "Please re-enter the server name."
-    echo ""
-    exit 1
-fi
+valid_response=false
+while [ "$valid_response" = false ]; do
+    read -n 1 -p "Is this correct? [y/n]: " -r
+    echo ""  # Move to a new line after capturing the input character
+    case $REPLY in
+        [Yy])
+            echo "Proceeding with the entered server name."
+            echo ""
+            valid_response=true
+            ;;
+        [Nn])
+            echo "Please re-enter the server name."
+            echo ""
+            valid_response=true
+            # Go back to the server name prompt
+            prompt_server_name
+            ;;
+        *)
+            echo "Invalid input. Please enter 'y' or 'n'."
+            ;;
+    esac
+done
 
 # Set the path to place the file on the remote host.
 read -p "Enter the remote CDN endpoint path where the file is to be placed and press [ENTER] (e.g. /files/disney): " RemoteServerPath
