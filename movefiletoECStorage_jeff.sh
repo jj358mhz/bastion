@@ -49,13 +49,26 @@ then
         [  -z "$PathandFile" ] && echo "Whoops!, you did not enter anything, exiting"  ; then
         exit
     fi
-    #Get the speed and exit if not a number : might need to set a max but early days.
-    read -p "Enter the speed you would like to use in kbits/s and press [ENTER] (i.e., 30000 would be 30000 kbits/30Mbps per second): " Speed
-    echo $Speed
-    re='^[0-9]+$'
-    if ! [[ $Speed =~ $re ]] ; then
-           echo "error: Not a number" >&2; exit 1
-       fi
+
+    # Get the speed from user's choice of predefined options
+    echo "Choose a speed option:"
+    echo "1) 10000 kbits/s"
+    echo "2) 20000 kbits/s"
+    echo "3) 30000 kbits/s"
+    echo "4) 40000 kbits/s"
+    echo "5) 50000 kbits/s"
+    read -p "Enter the number of the speed option and press [ENTER]: " SpeedOption
+
+    case $SpeedOption in
+        1) Speed=10000 ;;
+        2) Speed=20000 ;;
+        3) Speed=30000 ;;
+        4) Speed=40000 ;;
+        5) Speed=50000 ;;
+        *) echo "Invalid speed option selected. Exiting." ; exit 1 ;;
+    esac
+
+    echo "$Speed kbits/s"
     read -p "Are you sure all data is correct? [y/n]: " -n 1 -r
         if [[ $REPLY =~ ^[Yy]$ ]]
         then
