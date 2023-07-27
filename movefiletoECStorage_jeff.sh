@@ -25,75 +25,148 @@ echo    # (optional) move to a new line
 
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "yes"
-    # Get the server name and check dns before proceeding.
-    read -p "Enter the server that the file is located on and press [ENTER]: " ServerName
-    echo "$ServerName"
-    ip=$(nslookup "$ServerName" | egrep "Address:" | tail -1 | awk -F " " '{print $NF}')
-    fqdn=$(nslookup "$ServerName" | grep Name | tail -1 | awk -F " " '{print $NF}')
-    if [[ "$fqdn" == "$ServerName.edgecastcdn.net" ]]; then
-        echo "Pass"
-    else
-        echo "I cannot find that DNS record, exiting."
-        exit 1
-    fi
-    # Set the path to place file on remote host.
-    read -p "Enter the remote cdn endpoint path where the file is to be placed and press [ENTER] (i.e. /fox/for_download/for_pavel): " RemoteServerPath
-    echo ""
-    echo "$RemoteServerPath"
-    if [ -z "$RemoteServerPath" ]; then
-        echo "Whoops!, you did not enter anything, exiting"
-        exit 1
-    fi
-
-    # Get the file structure and make sure it is not blank
-    echo "Example of the path would be /var/Edgecast/logs/uplynk/uplynk_liveslicer-kcpq_fxb_p.log.tar.bz2"
-    echo ""
-    read -p "Enter the full path of the location of the file you would like to move and press [ENTER]: " PathandFile
-    echo "$PathandFile"
-    if [ -z "$PathandFile" ]; then
-        echo "Whoops!, you did not enter anything, exiting"
-        exit 1
-    fi
-
-    # Get the speed from user's choice of predefined options
-    echo "Choose a speed option:"
-    echo "1) 10000 kbits/s"
-    echo "2) 20000 kbits/s"
-    echo "3) 30000 kbits/s"
-    echo "4) 40000 kbits/s"
-    echo "5) 50000 kbits/s"
-    read -p "Enter the number of the speed option and press [ENTER]: " SpeedOption
-
-    case $SpeedOption in
-        1) Speed=10000 ;;
-        2) Speed=20000 ;;
-        3) Speed=30000 ;;
-        4) Speed=40000 ;;
-        5) Speed=50000 ;;
-        *) echo "Invalid speed option selected. Exiting." ; exit 1 ;;
-    esac
-
-    echo "$Speed kbits/s"
-    read -p "Are you sure all data is correct? [y/n]: " -n 1 -r
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        ActualFile=$(echo "$PathandFile" | awk -F "/" '{print $NF}')
-        changedActualFile="$(date +"%H-%M_%d-%m-%Y")$ActualFile"
-        /usr/bin/scp -4 -l "$Speed" -i "$UKey" "root@$ServerName:$PathandFile" "/home/ecdc/$User/$changedActualFile"
-        echo "File Complete"
-        echo "Moving file to Storage"
-        # /usr/bin/scp -4 -i /home/ecdc/$User/.ssh/$UKey /home/ecdc/$User/$changedActualFile root@$FTPServer:/EC_Storage/grq001/1176C/appsupport/
-        /usr/bin/scp -4 -i "$UKey" "/home/ecdc/$User/$changedActualFile" "$CDNUser$RemoteServerPath"
-        echo ""
-        echo "The file has been moved"
-        echo ""
-        echo "Please test with a curl:"
-        echo ""
-        echo "curl -O $CDNDownloadURL$RemoteServerPath/$changedActualFile"
-        echo ""
-        read -p "Would you like to delete the file from bast to keep things clean? [y/n] " -n 1 -r
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
-            rm "/home/ecdc/$User/$changedActualFile"
-            echo "\n"
+    # Prompt the user to choose how to set FullServerName
+    valid_option=false
+    while [ "$valid_option" = false ]; do
+        echo "Choose how to set FullServerName:"
+        echo "1) Automatically generate based on server number and POP"
+        echo "2) Manually enter FullServerName"
+        read -p "Enter the number of the option and press [ENTER]: " Option
+        if [[ $Option =~ ^[1-2]$ ]]; then
+            valid_option=true
+        else
+            echo "Invalid input. Please enter a valid number."
         fi
+    done
+
+    if [ "$Option" -eq 1 ]; then
+        # Prompt the user to enter the three-digit number for the server name
+        valid_number=false
+        while [ "$valid_number" = false ]; do
+            read -p "Enter a three-digit number for the server name (e.g., 025) and press [ENTER]: " ServerNumber
+            re='^[0-9]{3}$'
+            if [[ $ServerNumber =~ $re ]]; then
+                valid_number=true
+                echo "Entered three-digit number: $ServerNumber"
+                echo ""
+            else
+                echo "Invalid input. Please enter a valid three-digit number."
+            fi
+        done
+
+        # Prompt the user to select a POP from the available options
+        declare -a POP_LIST=("dxa" "dxc" "dxd" "fxa" "fxb" "fxc" "fxd" "fxe" "mxe" "mxw")  # Add your POP names here
+
+        echo "Available POP options:"
+        for i in "${!POP_LIST[@]}"; do
+            echo "$((i+1)). ${POP_LIST[$i]}"
+        done
+
+        valid_pop=false
+        while [ "$valid_pop" = false ]; do
+            read -n 1 -p "Enter the number of the POP and press [ENTER]: " POPOption
+            echo ""  # Move to a new line after capturing the input character
+            case $POPOption in
+                [1-9])
+                    if [ "$POPOption" -le "${#POP_LIST[@]}" ]; then
+                        POP="${POP_LIST[$((POPOption-1))]}"
+                        valid_pop=true
+                        echo "Selected POP: $POP"
+                        echo ""
+                    else
+                        echo "Invalid input. Please enter a valid number from the list."
+                    fi
+                    ;;
+                *)
+                    echo "Invalid input. Please enter a valid number from the list."
+                    ;;
+            esac
+        done
+
+        FullServerName="slce${ServerNumber}.${POP}"
+        echo "The generated FullServerName is: $FullServerName"
+        echo ""
+    else
+        # Manually enter FullServerName
+        read -p "Enter the FullServerName and press [ENTER]: " FullServerName
+        echo "Manually entered FullServerName: $FullServerName"
+        echo ""
+    fi
+fi
+
+echo "Entered server name: $FullServerName"
+
+read -p "Is this correct? [y/n]: " -n 1 -r
+echo ""
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+    echo "Proceeding with the entered server name."
+    echo ""
+else
+    echo "Please re-enter the server name."
+    echo ""
+    exit 1
+fi
+
+# Set the path to place the file on the remote host.
+read -p "Enter the remote CDN endpoint path where the file is to be placed and press [ENTER] (e.g. /files/disney): " RemoteServerPath
+echo ""
+echo "$RemoteServerPath"
+
+if [ -z "$RemoteServerPath" ]; then
+    echo "Whoops!, you did not enter anything, exiting"
+    exit 1
+fi
+
+# Get the file structure and make sure it is not blank
+echo "Example of the path would be /var/Edgecast/logs/uplynk/uplynk_liveslicer-kcpq_fxb_p.log.tar.bz2"
+echo ""
+read -p "Enter the full path of the location of the file you would like to move and press [ENTER]: " PathandFile
+echo "$PathandFile"
+
+if [ -z "$PathandFile" ]; then
+    echo "Whoops!, you did not enter anything, exiting"
+    exit 1
+fi
+
+# Get the speed from the user's choice of predefined options
+echo "Choose a speed option:"
+echo "1) 10000 kbits/s"
+echo "2) 20000 kbits/s"
+echo "3) 30000 kbits/s"
+echo "4) 40000 kbits/s"
+echo "5) 50000 kbits/s"
+read -p "Enter the number of the speed option and press [ENTER]: " SpeedOption
+
+case $SpeedOption in
+    1) Speed=10000 ;;
+    2) Speed=20000 ;;
+    3) Speed=30000 ;;
+    4) Speed=40000 ;;
+    5) Speed=50000 ;;
+    *) echo "Invalid speed option selected. Exiting." ; exit 1 ;;
+esac
+
+echo "$Speed kbits/s"
+read -p "Are you sure all data is correct? [y/n]: " -n 1 -r
+
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+    ActualFile=$(echo "$PathandFile" | awk -F "/" '{print $NF}')
+    changedActualFile="$(date +"%H-%M_%d-%m-%Y")$ActualFile"
+    /usr/bin/scp -4 -l "$Speed" -i "$UKey" "root@$FullServerName:$PathandFile" "/home/ecdc/$User/$changedActualFile"
+    echo "File Complete"
+    echo "Moving file to Storage"
+    /usr/bin/scp -4 -i "$UKey" "/home/ecdc/$User/$changedActualFile" "$CDNUser$RemoteServerPath"
+    echo ""
+    echo "The file has been moved"
+    echo ""
+    echo "Please test with a curl:"
+    echo ""
+    echo "curl -O $CDNDownloadURL$RemoteServerPath/$changedActualFile"
+    echo ""
+    read -p "Would you like to delete the file from bast to keep things clean? [y/n] " -n 1 -r
+
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        rm "/home/ecdc/$User/$changedActualFile"
+        echo "\n"
     fi
 fi
