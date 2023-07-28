@@ -15,6 +15,7 @@ COL_CYAN="\033[0;36m"  # Cyan
 TICK="[${COL_GREEN}✓${COL_NC}]"
 CROSS="[${COL_RED}✗${COL_NC}]"
 INFO="[${COL_YELLOW}i${COL_NC}]"
+QUESTION="[${COL_PURPLE}?${COL_NC}]"
 
 
 # Function to copy the file from slicer to Bastion server
