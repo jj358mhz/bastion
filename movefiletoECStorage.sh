@@ -303,9 +303,6 @@ echo -e "${INFO} Selected speed is: ${COL_CYAN}$Mbps_speed Mbps${COL_NC}"
 
 # Prompt the user to confirm whether all data is correct before proceeding
 prompt_yes_no
-# read -p "Are you sure all data is correct? [y/n]: " -n 1 -r
-# echo # Move to a new line after capturing the input character
-
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     ActualFile=$(echo "$PathandFile" | awk -F "/" '{print $NF}')
     changedActualFile="$(date +"%H-%M_%d-%m-%Y")$ActualFile"
