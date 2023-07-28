@@ -4,20 +4,22 @@
 CDN_USERNAME="jjohnston@edg.io@rsync.vny.EEA8.labcdn.com:"
 CDN_DOWNLOAD_URL="http://cdn.telcomjj.com"
 
-# These provide the colors we need for making the script execution more readable
-COL_NC="\e[0m" # No Color
-COL_RED="\e[1;91m"
-COL_GREEN="\e[1;32m"
-COL_YELLOW="\e[1;33m"
-COL_PURPLE="\e[1;35m"
-COL_CYAN="\e[0;36m"
+# Define color codes for output
+COL_NC="\033[0m"      # No Color
+COL_RED="\033[1;91m"  # Red
+COL_GREEN="\033[1;32m"  # Green
+COL_YELLOW="\033[1;33m"  # Yellow
+COL_PURPLE="\033[1;35m"  # Purple
+COL_CYAN="\033[0;36m"  # Cyan
+
 TICK="[${COL_GREEN}✓${COL_NC}]"
 CROSS="[${COL_RED}✗${COL_NC}]"
-INFO="[i]"
+INFO="[${COL_YELLOW}i${COL_NC}]"
+
 
 # Generates download URL
 generate_download_url() {
-  echo -e "${INFO} ${COL_CYAN}Please test with a curl of the following URL:${COL_NC}"
+  echo -e "${INFO} ${COL_YELLOW}Please test with a curl of the following URL:${COL_NC}"
   echo
   echo -e "${COL_PURPLE}**************************************************************************************************************************************${COL_NC}"
   echo -e "${COL_PURPLE}**************************************************************************************************************************************${COL_NC}"
@@ -32,8 +34,7 @@ prompt_server_name() {
     valid_server_name=false
     while [ "$valid_server_name" = false ]; do
         read -p "Enter a three-digit number for the server name (e.g., 025) and press [ENTER]: " ServerNumber
-        re='^[0-9]{3}$'
-        if [[ $ServerNumber =~ $re ]]; then
+        re='^[0-9]{3}$'        if [[ $ServerNumber =~ $re ]]; then
             valid_server_name=true
             echo "Entered three-digit number: $ServerNumber"
             echo ""
@@ -162,15 +163,14 @@ read -p "Enter the full path of the location of the file you would like to move 
 echo "$PathandFile"
 
 if [ -z "$PathandFile" ]; then
-    echo "Whoops!, you did not enter anything, exiting"
+    echo -e "${CROSS} ${COL_RED}Whoops!, you did not enter anything, exiting${COL_NC}"
     exit 1
 fi
 
 # Get the speed from the user's choice of predefined options
 echo "Choose a speed option:"
 echo ""
-echo "1) ->  10 Mbps"
-echo "2) ->  20 Mbps"
+echo "1) ->  10 Mbps"echo "2) ->  20 Mbps"
 echo "3) ->  30 Mbps"
 echo "4) ->  40 Mbps"
 echo "5) ->  50 Mbps"
@@ -194,7 +194,7 @@ case $SpeedOption in
     9) Speed=90000 ;;
     10) Speed=100000 ;;
     20) Speed=200000 ;;
-    *) echo "Invalid speed option selected. Exiting." ; exit 1 ;;
+    *) echo -e "${CROSS} ${COL_RED}Invalid speed option selected. Exiting...${COL_NC}" ; exit 1 ;;
 esac
 
 # Calculate the speed in Mbps
@@ -218,7 +218,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     /usr/bin/scp -4 -i "$UKey" "/home/ecdc/$User/$changedActualFile" "$CDN_USERNAME$RemoteServerPath"
 
     echo ""
-    echo "The file has been moved"
+    echo -e "${TICK} ${COL_CYAN}The file has been moved${COL_NC}"
     echo ""
     generate_download_url
     echo ""
@@ -229,8 +229,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         rm "/home/ecdc/$User/$changedActualFile"
-        echo "File deleted from the bastion server."
+        echo -e "${TICK} ${COL_CYAN}File deleted from the bastion server${COL_NC}"
     else
-        echo "File will not be deleted."
+        echo -e "${CROSS} ${COL_RED}File will not be deleted${COL_NC}"
     fi
 fi
