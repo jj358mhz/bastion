@@ -220,10 +220,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo ""
     echo "The file has been moved"
     echo ""
-    #echo "Please test with a curl:"
-    echo ""
     generate_download_url
-    #echo "curl -O $CDN_DOWNLOAD_URL$RemoteServerPath/$changedActualFile"
     echo ""
 
     # Prompt for file deletion
