@@ -12,6 +12,7 @@ COL_YELLOW="\033[1;33m"  # Yellow
 COL_PURPLE="\033[1;35m"  # Purple
 COL_CYAN="\033[0;36m"  # Cyan
 
+ALERT="[⚠️ ]"
 TICK="[${COL_GREEN}✓${COL_NC}]"
 CROSS="[${COL_RED}✗${COL_NC}]"
 INFO="[$(tput setaf 3)i$(tput sgr0)]"
@@ -24,7 +25,7 @@ slicer_to_bastion() {
   /usr/bin/scp -4 -l "$Speed" -i "$UKey" "root@$FullServerName:$PathandFile" "/home/ecdc/$User/$changedActualFile"
   local scp_status=$?
   if [ $scp_status -eq 0 ]; then
-    echo -e "${TICK} ${COL_CYAN}File copy from slicer to Bastion server complete...${COL_NC}"
+    echo -e "${TICK} File copy from slicer to Bastion server complete..."
   else
     echo -e "${CROSS} ${COL_RED}Failed to copy the file from slicer to Bastion server.${COL_NC}"
     exit 1
@@ -38,7 +39,7 @@ bastion_to_storage() {
   /usr/bin/scp -4 -i "$UKey" "/home/ecdc/$User/$changedActualFile" "$CDN_USERNAME$RemoteServerPath"
   local scp_status=$?
   if [ $scp_status -eq 0 ]; then
-    echo -e "${TICK} ${COL_CYAN}File copy from Bastion server to storage complete...${COL_NC}"
+    echo -e "${TICK} File copy from Bastion server to storage complete..."
   else
     echo -e "${CROSS} ${COL_RED}Failed to copy the file from Bastion server to storage.${COL_NC}"
     exit 1
@@ -52,7 +53,7 @@ generate_download_url() {
   echo
   echo -e "${COL_PURPLE}**************************************************************************************************************************************${COL_NC}"
   echo -e "${COL_PURPLE}**************************************************************************************************************************************${COL_NC}"
-  echo -e "${TICK} ${COL_GREEN}curl -O ${CDN_DOWNLOAD_URL}$RemoteServerPath/$changedActualFile${COL_NC}"
+  echo -e "${COL_GREEN}curl -O ${CDN_DOWNLOAD_URL}$RemoteServerPath/$changedActualFile${COL_NC}"
   echo -e "${COL_PURPLE}**************************************************************************************************************************************${COL_NC}"
   echo -e "${COL_PURPLE}**************************************************************************************************************************************${COL_NC}"
   echo
@@ -68,9 +69,9 @@ prompt_server_name() {
         if [[ $ServerNumber =~ $re ]]; then
             valid_server_name=true
             echo "Entered three-digit number: $ServerNumber"
-            echo ""
+            echo
         else
-            echo "Invalid input. Please enter a valid three-digit number."
+            echo -e "${CROSS} ${COL_RED}Invalid input. Please enter a valid three-digit number${COL_NC}"
         fi
     done
 
@@ -83,27 +84,27 @@ prompt_server_name() {
     valid_pop=false
     while [ "$valid_pop" = false ]; do
         read -n 1 -p "Enter the number of the POP and press [ENTER]: " POPOption
-        echo ""  # Move to a new line after capturing the input character
+        echo  # Move to a new line after capturing the input character
         case $POPOption in
             [1-9])
                 if [ "$POPOption" -le "${#POP_LIST[@]}" ]; then
                     POP="${POP_LIST[$((POPOption-1))]}"
                     valid_pop=true
-                    echo "Selected POP: $POP"
-                    echo ""
+                    echo
+                    echo -e "${INFO} Selected POP: ${COL_CYAN}$POP${COL_NC}"
                 else
-                    echo "Invalid input. Please enter a valid number from the list."
+                    echo -e "${CROSS} ${COL_RED}Invalid input. Please enter a valid number from the list${COL_NC}"
                 fi
                 ;;
             *)
-                echo "Invalid input. Please enter a valid number from the list."
+                echo -e "${CROSS} ${COL_RED}Invalid input. Please enter a valid number from the list${COL_NC}"
                 ;;
         esac
     done
 
     FullServerName="slce${ServerNumber}.${POP}"
-    echo "The generated FullServerName is: $FullServerName"
-    echo ""
+    echo -e "${INFO} The generated FullServerName is: ${COL_CYAN}$FullServerName${COL_NC}"
+    echo
 }
 
 
@@ -123,30 +124,29 @@ prompt_select_destination() {
     valid_destination=false
     while [ "$valid_destination" = false ]; do
         read -p "Enter the number of the destination or '0' to enter a custom path and press [ENTER]: " DestinationOption
-        echo ""  # Move to a new line after capturing the input character
+        echo  # Move to a new line after capturing the input character
         case $DestinationOption in
             [0])
                 read -p "Enter the custom path: " CustomPath
                 if [ -z "$CustomPath" ]; then
-                    echo "Custom path cannot be empty. Please try again."
+                    echo -e "${CROSS} ${COL_RED}Custom path cannot be empty. Please try again${COL_NC}"
                 else
                     RemoteServerPath="$CustomPath"
                     valid_destination=true
                     echo "Custom path entered: $RemoteServerPath"
-                    echo ""
+                    echo
                 fi
                 ;;
             [1-9])
                 if [ "$DestinationOption" -le "${#DESTINATIONS[@]}" ]; then
                     RemoteServerPath="${DESTINATIONS[$((DestinationOption-1))]}"
                     valid_destination=true
-                    echo "Selected destination: $RemoteServerPath"
                 else
-                    echo "Invalid input. Please enter a valid number from the list."
+                    echo -e "${CROSS} ${COL_RED}Invalid input. Please enter a valid number from the list${COL_NC}"
                 fi
                 ;;
             *)
-                echo "Invalid input. Please enter a valid number from the list or '0' for a custom path."
+                echo -e "${CROSS} ${COL_RED}Invalid input. Please enter a valid number from the list or '0' for a custom path${COL_NC}"
                 ;;
         esac
     done
@@ -177,37 +177,39 @@ prompt_yes_no() {
 # Get user identity and remove unwanted characters from the username
 # shellcheck disable=SC1003
 User=$(whoami | awk -F '\\' '{print $2}' | tr -d '\r')
-echo "The user is: $User"
-echo ""
+echo
+echo -e "${INFO} The user is: $User"
 
 # Get ssh key of the user
 # shellcheck disable=SC2012
 UKey=$(ls "/home/ecdc/$User/.ssh"/id_* 2>/dev/null | head -n 1)
-echo "The user ssh key is: $UKey"
-echo ""
+echo -e "${INFO} The user ssh key is: $UKey"
 
 # Get Random FTP server in prod
 FTPServer=$(bselect ftp grq | sort --random-sort | tail -1)
-echo "The random FTP server to be used is: $FTPServer"
-echo ""
-
-echo "Make sure your key has already been signed!"
-read -p "Do you want to continue? [y/n]: " -n 1 -r
-echo    # (optional) move to a new line
+echo -e "${INFO} The random FTP server to be used is: $FTPServer"
+echo
+echo -e "${ALERT} ${COL_YELLOW}Make sure your key has already been signed by first logging into any slicer!${COL_NC}"
+echo
+prompt_yes_no
+# read -p "Do you want to continue? [y/n]: " -n 1 -r
+# echo    # (optional) move to a new line
 
 if [[ $REPLY =~ ^[Yy]$ ]]; then
-    echo "yes"
+    echo
     # Prompt the user to choose how to set FullServerName
     valid_option=false
     while [ "$valid_option" = false ]; do
-        echo "Choose how to set FullServerName:"
-        echo "1) Automatically generate based on server number and POP"
-        echo "2) Manually enter FullServerName"
+        echo "Choose how to set source Slicer server:"
+        echo " 1) Automatically generate based on server number and POP"
+        echo " 2) Manually enter FullServerName"
+        echo
         read -p "Enter the number of the option and press [ENTER]: " Option
+        echo
         if [[ $Option =~ ^[1-2]$ ]]; then
             valid_option=true
         else
-            echo "Invalid input. Please enter a valid number."
+            echo -e "${CROSS} ${COL_RED}Invalid input. Please enter a valid number${COL_NC}"
         fi
     done
 
@@ -216,11 +218,12 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     else
         read -p "Enter the FullServerName and press [ENTER]: " FullServerName
         echo "Manually entered FullServerName: $FullServerName"
-        echo ""
+        echo
     fi
+else
+    echo -e "${INFO} Exiting script..."
+    exit 0
 fi
-
-echo "Entered server name: $FullServerName"
 
 valid_response=false
 while [ "$valid_response" = false ]; do
@@ -238,12 +241,11 @@ done
 
 # Set the path to place the file on the remote host.
 prompt_select_destination
-
-echo ""
-echo -e "${INFO} ${COL_YELLOW}The remote storage / CDN endpoint is: $RemoteServerPath${COL_NC}"
+echo -e "${INFO} The remote storage/CDN endpoint is: ${COL_CYAN}$RemoteServerPath${COL_NC}"
+echo
 
 if [ -z "$RemoteServerPath" ]; then
-    echo "Whoops!, you did not enter anything, exiting"
+    echo -e "${CROSS} ${COL_RED}Whoops!, you did not enter anything, exiting${COL_NC}"
     exit 1
 fi
 
@@ -258,7 +260,7 @@ fi
 
 # Get the speed from the user's choice of predefined options
 echo "Choose a speed option:"
-echo ""
+echo
 echo "1) ->  10 Mbps"
 echo "2) ->  20 Mbps"
 echo "3) ->  30 Mbps"
@@ -289,7 +291,8 @@ esac
 
 # Calculate the speed in Mbps
 Mbps_speed=$((Speed / 1000))
-echo "Selected speed is: $Mbps_speed Mbps"
+echo
+echo -e "${INFO} Selected speed is: ${COL_CYAN}$Mbps_speed Mbps${COL_NC}"
 
 # Prompt the user to confirm whether all data is correct before proceeding
 prompt_yes_no
@@ -302,24 +305,28 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
     # Move file from the slicer to the bastion server
     slicer_to_bastion
+    echo
 
     # Transfer the file from the bastion server to the user's local storage / CDN endpoint
     bastion_to_storage
+    echo
 
-    echo ""
-    echo -e "${TICK} ${COL_CYAN}The file has been moved${COL_NC}"
-    echo ""
+    # Generate a download url that the user can cURL from their storage location
     generate_download_url
-    echo ""
+    echo
 
     # Prompt for file deletion
     read -p "Would you like to delete the file from bast to keep things clean? [y/n] " -n 1 -r
-    echo "" # Move to a new line after capturing the input character
+    echo # Move to a new line after capturing the input character
 
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         rm "/home/ecdc/$User/$changedActualFile"
+        echo
         echo -e "${TICK} ${COL_CYAN}File deleted from the bastion server${COL_NC}"
+        echo
     else
+        echo
         echo -e "${CROSS} ${COL_RED}File will not be deleted${COL_NC}"
+        echo
     fi
 fi
