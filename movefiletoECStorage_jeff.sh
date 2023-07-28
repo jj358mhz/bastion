@@ -16,6 +16,7 @@ TICK="[${COL_GREEN}✓${COL_NC}]"
 CROSS="[${COL_RED}✗${COL_NC}]"
 INFO="[${COL_YELLOW}i${COL_NC}]"
 
+
 # Function to copy the file from slicer to Bastion server
 slicer_to_bastion() {
   echo -e "${INFO} ${COL_CYAN}Copying file from slicer to Bastion server...${COL_NC}"
@@ -28,6 +29,7 @@ slicer_to_bastion() {
     exit 1
   fi
 }
+
 
 # Function to copy the file from Bastion server to storage
 bastion_to_storage() {
@@ -42,6 +44,7 @@ bastion_to_storage() {
   fi
 }
 
+
 # Generates download URL
 generate_download_url() {
   echo -e "${INFO} ${COL_YELLOW}Please test with a curl of the following URL:${COL_NC}"
@@ -53,6 +56,7 @@ generate_download_url() {
   echo -e "${COL_PURPLE}**************************************************************************************************************************************${COL_NC}"
   echo
 }
+
 
 # Function to prompt the user to enter the server name
 prompt_server_name() {
@@ -100,6 +104,54 @@ prompt_server_name() {
     echo "The generated FullServerName is: $FullServerName"
     echo ""
 }
+
+
+# Function to select a destination from the list of options or manually enter a path
+prompt_select_destination() {
+    # Define a list of selectable destinations
+    declare -a DESTINATIONS=("/files/captures" "/files/disney" "/files/fox") # Add your destination options here
+
+    # Display the numbered list of destination options
+    echo "Choose a destination for the file or enter a custom path:"
+    for i in "${!DESTINATIONS[@]}"; do
+        echo "$((i+1)). ${DESTINATIONS[$i]}"
+    done
+    echo "0. Enter a custom path"
+
+    # Prompt the user to choose a destination by number or enter a custom path
+    valid_destination=false
+    while [ "$valid_destination" = false ]; do
+        read -p "Enter the number of the destination or '0' to enter a custom path and press [ENTER]: " DestinationOption
+        echo ""  # Move to a new line after capturing the input character
+        case $DestinationOption in
+            [0])
+                read -p "Enter the custom path: " CustomPath
+                if [ -z "$CustomPath" ]; then
+                    echo "Custom path cannot be empty. Please try again."
+                else
+                    RemoteServerPath="$CustomPath"
+                    valid_destination=true
+                    echo "Custom path entered: $RemoteServerPath"
+                    echo ""
+                fi
+                ;;
+            [1-9])
+                if [ "$DestinationOption" -le "${#DESTINATIONS[@]}" ]; then
+                    RemoteServerPath="${DESTINATIONS[$((DestinationOption-1))]}"
+                    valid_destination=true
+                    echo "Selected destination: $RemoteServerPath"
+                else
+                    echo "Invalid input. Please enter a valid number from the list."
+                fi
+                ;;
+            *)
+                echo "Invalid input. Please enter a valid number from the list or '0' for a custom path."
+                ;;
+        esac
+    done
+}
+
+
 
 # Get user identity and remove unwanted characters from the username
 # shellcheck disable=SC1003
@@ -173,9 +225,10 @@ while [ "$valid_response" = false ]; do
 done
 
 # Set the path to place the file on the remote host.
-read -p "Enter the remote CDN endpoint path where the file is to be placed and press [ENTER] (e.g. /files/disney): " RemoteServerPath
+prompt_select_destination
+
 echo ""
-echo "$RemoteServerPath"
+echo -e "${INFO} ${COL_YELLOW}The remote storage / CDN endpoint is: $RemoteServerPath${COL_NC}"
 
 if [ -z "$RemoteServerPath" ]; then
     echo "Whoops!, you did not enter anything, exiting"
@@ -183,10 +236,8 @@ if [ -z "$RemoteServerPath" ]; then
 fi
 
 # Get the file structure and make sure it is not blank
-echo "Example of the path would be /var/Edgecast/logs/uplynk/uplynk_liveslicer-kcpq_fxb_p.log.tar.bz2"
-echo ""
-read -p "Enter the full path of the location of the file you would like to move and press [ENTER]: " PathandFile
-echo "$PathandFile"
+read -p "Enter the full path of the location of the file you would like to move and press [ENTER] (example: /root/bond0.64_capture.pcap): " PathandFile
+echo "You entered: $PathandFile"
 
 if [ -z "$PathandFile" ]; then
     echo -e "${CROSS} ${COL_RED}Whoops!, you did not enter anything, exiting${COL_NC}"
