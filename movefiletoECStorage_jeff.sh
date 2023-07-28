@@ -16,6 +16,31 @@ TICK="[${COL_GREEN}✓${COL_NC}]"
 CROSS="[${COL_RED}✗${COL_NC}]"
 INFO="[${COL_YELLOW}i${COL_NC}]"
 
+# Function to copy the file from slicer to Bastion server
+slicer_to_bastion() {
+  echo -e "${INFO} ${COL_CYAN}Copying file from slicer to Bastion server...${COL_NC}"
+  /usr/bin/scp -4 -l "$Speed" -i "$UKey" "root@$FullServerName:$PathandFile" "/home/ecdc/$User/$changedActualFile"
+  local scp_status=$?
+  if [ $scp_status -eq 0 ]; then
+    echo -e "${TICK} ${COL_CYAN}File copy from slicer to Bastion server complete...${COL_NC}"
+  else
+    echo -e "${CROSS} ${COL_RED}Failed to copy the file from slicer to Bastion server.${COL_NC}"
+    exit 1
+  fi
+}
+
+# Function to copy the file from Bastion server to storage
+bastion_to_storage() {
+  echo -e "${INFO} ${COL_CYAN}Copying file from Bastion server to storage...${COL_NC}"
+  /usr/bin/scp -4 -i "$UKey" "/home/ecdc/$User/$changedActualFile" "$CDN_USERNAME$RemoteServerPath"
+  local scp_status=$?
+  if [ $scp_status -eq 0 ]; then
+    echo -e "${TICK} ${COL_CYAN}File copy from Bastion server to storage complete...${COL_NC}"
+  else
+    echo -e "${CROSS} ${COL_RED}Failed to copy the file from Bastion server to storage.${COL_NC}"
+    exit 1
+  fi
+}
 
 # Generates download URL
 generate_download_url() {
@@ -34,7 +59,8 @@ prompt_server_name() {
     valid_server_name=false
     while [ "$valid_server_name" = false ]; do
         read -p "Enter a three-digit number for the server name (e.g., 025) and press [ENTER]: " ServerNumber
-        re='^[0-9]{3}$'        if [[ $ServerNumber =~ $re ]]; then
+        re='^[0-9]{3}$'
+        if [[ $ServerNumber =~ $re ]]; then
             valid_server_name=true
             echo "Entered three-digit number: $ServerNumber"
             echo ""
@@ -210,12 +236,10 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     changedActualFile="$(date +"%H-%M_%d-%m-%Y")$ActualFile"
 
     # Move file from the slicer to the bastion server
-    /usr/bin/scp -4 -l "$Speed" -i "$UKey" "root@$FullServerName:$PathandFile" "/home/ecdc/$User/$changedActualFile"
-    echo "$PathandFile moved from $FullServerName to the bastion server"
+    slicer_to_bastion
 
     # Transfer the file from the bastion server to the user's local storage / CDN endpoint
-    echo "Transferring $PathandFile file to $CDN_USERNAME$RemoteServerPath"
-    /usr/bin/scp -4 -i "$UKey" "/home/ecdc/$User/$changedActualFile" "$CDN_USERNAME$RemoteServerPath"
+    bastion_to_storage
 
     echo ""
     echo -e "${TICK} ${COL_CYAN}The file has been moved${COL_NC}"
