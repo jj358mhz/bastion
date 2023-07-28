@@ -196,7 +196,8 @@ fi
 # Get the speed from the user's choice of predefined options
 echo "Choose a speed option:"
 echo ""
-echo "1) ->  10 Mbps"echo "2) ->  20 Mbps"
+echo "1) ->  10 Mbps"
+echo "2) ->  20 Mbps"
 echo "3) ->  30 Mbps"
 echo "4) ->  40 Mbps"
 echo "5) ->  50 Mbps"
