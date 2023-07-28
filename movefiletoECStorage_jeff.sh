@@ -257,7 +257,7 @@ if [ -z "$RemoteServerPath" ]; then
 fi
 
 # Get the file structure and make sure it is not blank
-read -p "Enter the full path of the location of the file you would like to move and press [ENTER] (example: /root/bond0.64_capture.pcap): " PathandFile
+read -p "Enter the slicer file location full path you wish to transfer and press [ENTER] (example: /root/bond0.64_capture.pcap): " PathandFile
 echo "You entered: $PathandFile"
 
 if [ -z "$PathandFile" ]; then
