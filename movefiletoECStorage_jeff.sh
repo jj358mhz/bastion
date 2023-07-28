@@ -113,18 +113,18 @@ prompt_select_destination() {
     # Define a list of selectable destinations
     declare -a DESTINATIONS=("/files/captures" "/files/disney" "/files/fox") # Add your destination options here
 
-    # Display the numbered list of destination options
-    echo "Choose a destination for the file or enter a custom path:"
-    for i in "${!DESTINATIONS[@]}"; do
-        echo "$((i+1)). ${DESTINATIONS[$i]}"
-    done
-    echo "0. Enter a custom path"
+    while true; do
+        # Display the numbered list of destination options
+        echo "Choose a destination for the file or enter a custom path:"
+        for i in "${!DESTINATIONS[@]}"; do
+            echo "$((i+1)). ${DESTINATIONS[$i]}"
+        done
+        echo "0. Enter a custom path"
 
-    # Prompt the user to choose a destination by number or enter a custom path
-    valid_destination=false
-    while [ "$valid_destination" = false ]; do
+        # Prompt the user to choose a destination by number or enter a custom path
         read -p "Enter the number of the destination or '0' to enter a custom path and press [ENTER]: " DestinationOption
         echo  # Move to a new line after capturing the input character
+
         case $DestinationOption in
             [0])
                 read -p "Enter the custom path: " CustomPath
@@ -132,15 +132,15 @@ prompt_select_destination() {
                     echo -e "${CROSS} ${COL_RED}Custom path cannot be empty. Please try again${COL_NC}"
                 else
                     RemoteServerPath="$CustomPath"
-                    valid_destination=true
                     echo "Custom path entered: $RemoteServerPath"
                     echo
+                    break
                 fi
                 ;;
             [1-9])
                 if [ "$DestinationOption" -le "${#DESTINATIONS[@]}" ]; then
                     RemoteServerPath="${DESTINATIONS[$((DestinationOption-1))]}"
-                    valid_destination=true
+                    break
                 else
                     echo -e "${CROSS} ${COL_RED}Invalid input. Please enter a valid number from the list${COL_NC}"
                 fi
@@ -238,9 +238,18 @@ while [ "$valid_response" = false ]; do
 done
 
 # Set the path to place the file on the remote host.
-prompt_select_destination
-echo -e "${INFO} The remote storage/CDN endpoint is: ${COL_CYAN}$RemoteServerPath${COL_NC}"
-echo
+while true; do
+    prompt_select_destination
+    echo -e "${INFO} The remote storage/CDN endpoint is: ${COL_CYAN}$RemoteServerPath${COL_NC}"
+    echo
+
+    if prompt_yes_no ; then
+        break
+    else
+        echo -e "${INFO} Re-selecting the destination..."
+        echo
+    fi
+done
 
 if [ -z "$RemoteServerPath" ]; then
     echo -e "${CROSS} ${COL_RED}Whoops!, you did not enter anything, exiting${COL_NC}"
