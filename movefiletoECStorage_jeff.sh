@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Bastion script to easily pull files (logs, captures, etc., off slicer servers)
 
-CDNUser="jjohnston@edg.io@rsync.vny.EEA8.labcdn.com:"
-CDNDownloadURL="http://cdn.telcomjj.com"
+CDN_USERNAME="jjohnston@edg.io@rsync.vny.EEA8.labcdn.com:"
+CDN_DOWNLOAD_URL="http://cdn.telcomjj.com"
 
 # Function to prompt the user to enter the server name
 prompt_server_name() {
@@ -191,8 +191,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "$PathandFile moved from $FullServerName to the bastion server"
 
     # Transfer the file from the bastion server to the user's local storage / CDN endpoint
-    echo "Transferring $PathandFile file to $CDNUser$RemoteServerPath"
-    /usr/bin/scp -4 -i "$UKey" "/home/ecdc/$User/$changedActualFile" "$CDNUser$RemoteServerPath"
+    echo "Transferring $PathandFile file to $CDN_USERNAME$RemoteServerPath"
+    /usr/bin/scp -4 -i "$UKey" "/home/ecdc/$User/$changedActualFile" "$CDN_USERNAME$RemoteServerPath"
 
     echo ""
     echo "The file has been moved"
