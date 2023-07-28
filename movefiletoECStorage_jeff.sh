@@ -14,7 +14,7 @@ COL_CYAN="\033[0;36m"  # Cyan
 
 TICK="[${COL_GREEN}✓${COL_NC}]"
 CROSS="[${COL_RED}✗${COL_NC}]"
-INFO="[${COL_YELLOW}i${COL_NC}]"
+INFO="[$(tput setaf 3)i$(tput sgr0)]"
 QUESTION="[${COL_PURPLE}?${COL_NC}]"
 
 
@@ -153,6 +153,26 @@ prompt_select_destination() {
 }
 
 
+# Function to prompt for yes or no input
+prompt_yes_no() {
+    echo -e -n "${QUESTION} Is the data correct - shall we proceed to the next step? [y/n]: ${COL_NC}"
+    while true; do
+        read -n 1 -r REPLY
+        echo  # Move to a new line after capturing the input character
+        case $REPLY in
+            [Yy])
+                return 0
+                ;;
+            [Nn])
+                return 1
+                ;;
+            *)
+                echo -e "${CROSS} ${COL_RED}Invalid input. Please enter 'y' or 'n'${COL_NC}"
+                ;;
+        esac
+    done
+}
+
 
 # Get user identity and remove unwanted characters from the username
 # shellcheck disable=SC1003
@@ -204,25 +224,16 @@ echo "Entered server name: $FullServerName"
 
 valid_response=false
 while [ "$valid_response" = false ]; do
-    read -n 1 -p "Is this correct? [y/n]: " -r
-    echo ""  # Move to a new line after capturing the input character
-    case $REPLY in
-        [Yy])
-            echo "Proceeding with the entered server name."
-            echo ""
-            valid_response=true
-            ;;
-        [Nn])
-            echo "Please re-enter the server name."
-            echo ""
-            valid_response=true
-            # Go back to the server name prompt
-            prompt_server_name
-            ;;
-        *)
-            echo "Invalid input. Please enter 'y' or 'n'."
-            ;;
-    esac
+    if prompt_yes_no ; then
+        echo -e "${INFO} Proceeding with the entered server name: ${COL_CYAN}$FullServerName${COL_NC}"
+        echo
+        valid_response=true
+    else
+        echo -e "${CROSS} ${COL_RED}Please re-enter the server name${COL_NC}"
+        echo
+        # Go back to the server name prompt
+        prompt_server_name
+    fi
 done
 
 # Set the path to place the file on the remote host.
@@ -281,8 +292,9 @@ Mbps_speed=$((Speed / 1000))
 echo "Selected speed is: $Mbps_speed Mbps"
 
 # Prompt the user to confirm whether all data is correct before proceeding
-read -p "Are you sure all data is correct? [y/n]: " -n 1 -r
-echo "" # Move to a new line after capturing the input character
+prompt_yes_no
+# read -p "Are you sure all data is correct? [y/n]: " -n 1 -r
+# echo # Move to a new line after capturing the input character
 
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     ActualFile=$(echo "$PathandFile" | awk -F "/" '{print $NF}')
