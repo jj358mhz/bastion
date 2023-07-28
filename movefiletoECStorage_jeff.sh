@@ -183,7 +183,7 @@ echo -e "${INFO} The user is: $User"
 # Get ssh key of the user
 # shellcheck disable=SC2012
 UKey=$(ls "/home/ecdc/$User/.ssh"/id_* 2>/dev/null | head -n 1)
-echo -e "${INFO} The user ssh key is: $UKey"
+echo -e "${INFO} The user's ssh key is: $UKey"
 
 # Get Random FTP server in prod
 FTPServer=$(bselect ftp grq | sort --random-sort | tail -1)
@@ -191,13 +191,11 @@ echo -e "${INFO} The random FTP server to be used is: $FTPServer"
 echo
 echo -e "${ALERT} ${COL_YELLOW}Make sure your key has already been signed by first logging into any slicer!${COL_NC}"
 echo
-prompt_yes_no
-# read -p "Do you want to continue? [y/n]: " -n 1 -r
-# echo    # (optional) move to a new line
+prompt_yes_no # Confirms choice to move on
 
+# Prompt the user to choose how to set FullServerName
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo
-    # Prompt the user to choose how to set FullServerName
     valid_option=false
     while [ "$valid_option" = false ]; do
         echo "Choose how to set source Slicer server:"
