@@ -4,6 +4,29 @@
 CDN_USERNAME="jjohnston@edg.io@rsync.vny.EEA8.labcdn.com:"
 CDN_DOWNLOAD_URL="http://cdn.telcomjj.com"
 
+# These provide the colors we need for making the script execution more readable
+COL_NC="\e[0m" # No Color
+COL_RED="\e[1;91m"
+COL_GREEN="\e[1;32m"
+COL_YELLOW="\e[1;33m"
+COL_PURPLE="\e[1;35m"
+COL_CYAN="\e[0;36m"
+TICK="[${COL_GREEN}✓${COL_NC}]"
+CROSS="[${COL_RED}✗${COL_NC}]"
+INFO="[i]"
+
+# Generates download URL
+generate_download_url() {
+  echo -e "${INFO} ${COL_CYAN}Please test with a curl of the following URL:${COL_NC}"
+  echo
+  echo -e "${COL_PURPLE}**************************************************************************************************************************************${COL_NC}"
+  echo -e "${COL_PURPLE}**************************************************************************************************************************************${COL_NC}"
+  echo -e "${TICK} ${COL_GREEN}curl -O ${CDN_DOWNLOAD_URL}$RemoteServerPath/$changedActualFile${COL_NC}"
+  echo -e "${COL_PURPLE}**************************************************************************************************************************************${COL_NC}"
+  echo -e "${COL_PURPLE}**************************************************************************************************************************************${COL_NC}"
+  echo
+}
+
 # Function to prompt the user to enter the server name
 prompt_server_name() {
     valid_server_name=false
@@ -197,9 +220,10 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo ""
     echo "The file has been moved"
     echo ""
-    echo "Please test with a curl:"
+    #echo "Please test with a curl:"
     echo ""
-    echo "curl -O $CDNDownloadURL$RemoteServerPath/$changedActualFile"
+    generate_download_url
+    #echo "curl -O $CDN_DOWNLOAD_URL$RemoteServerPath/$changedActualFile"
     echo ""
 
     # Prompt for file deletion
