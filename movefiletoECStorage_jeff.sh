@@ -52,11 +52,13 @@ prompt_server_name() {
 }
 
 # Get user identity and remove unwanted characters from the username
+# shellcheck disable=SC1003
 User=$(whoami | awk -F '\\' '{print $2}' | tr -d '\r')
 echo "The user is: $User"
 echo ""
 
 # Get ssh key of the user
+# shellcheck disable=SC2012
 UKey=$(ls "/home/ecdc/$User/.ssh"/id_* 2>/dev/null | head -n 1)
 echo "The user ssh key is: $UKey"
 echo ""
@@ -143,16 +145,18 @@ fi
 
 # Get the speed from the user's choice of predefined options
 echo "Choose a speed option:"
-echo "1) 10000 kbits/s"
-echo "2) 20000 kbits/s"
-echo "3) 30000 kbits/s"
-echo "4) 40000 kbits/s"
-echo "5) 50000 kbits/s"
-echo "6) 60000 kbits/s"
-echo "7) 70000 kbits/s"
-echo "8) 80000 kbits/s"
-echo "9) 90000 kbits/s"
-echo "10) 100000 kbits/s"
+echo ""
+echo "1) ->  10 Mbps"
+echo "2) ->  20 Mbps"
+echo "3) ->  30 Mbps"
+echo "4) ->  40 Mbps"
+echo "5) ->  50 Mbps"
+echo "6) ->  60 Mbps"
+echo "7) ->  70 Mbps"
+echo "8) ->  80 Mbps"
+echo "9) ->  90 Mbps"
+echo "10) -> 100 Mbps"
+echo "20) -> 200 Mbps"
 read -p "Enter the number of the speed option and press [ENTER]: " SpeedOption
 
 case $SpeedOption in
@@ -166,19 +170,30 @@ case $SpeedOption in
     8) Speed=80000 ;;
     9) Speed=90000 ;;
     10) Speed=100000 ;;
+    20) Speed=200000 ;;
     *) echo "Invalid speed option selected. Exiting." ; exit 1 ;;
 esac
 
-echo "$Speed kbits/s"
+# Calculate the speed in Mbps
+Mbps_speed=$((Speed / 1000))
+echo "Selected speed is: $Mbps_speed Mbps"
+
+# Prompt the user to confirm whether all data is correct before proceeding
 read -p "Are you sure all data is correct? [y/n]: " -n 1 -r
+echo "" # Move to a new line after capturing the input character
 
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     ActualFile=$(echo "$PathandFile" | awk -F "/" '{print $NF}')
     changedActualFile="$(date +"%H-%M_%d-%m-%Y")$ActualFile"
+
+    # Move file from the slicer to the bastion server
     /usr/bin/scp -4 -l "$Speed" -i "$UKey" "root@$FullServerName:$PathandFile" "/home/ecdc/$User/$changedActualFile"
-    echo "File Complete"
-    echo "Moving file to Storage"
+    echo "$PathandFile moved from $FullServerName to the bastion server"
+
+    # Transfer the file from the bastion server to the user's local storage / CDN endpoint
+    echo "Transferring $PathandFile file to $CDNUser$RemoteServerPath"
     /usr/bin/scp -4 -i "$UKey" "/home/ecdc/$User/$changedActualFile" "$CDNUser$RemoteServerPath"
+
     echo ""
     echo "The file has been moved"
     echo ""
@@ -186,10 +201,15 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo ""
     echo "curl -O $CDNDownloadURL$RemoteServerPath/$changedActualFile"
     echo ""
+
+    # Prompt for file deletion
     read -p "Would you like to delete the file from bast to keep things clean? [y/n] " -n 1 -r
+    echo "" # Move to a new line after capturing the input character
 
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         rm "/home/ecdc/$User/$changedActualFile"
-        echo "\n"
+        echo "File deleted from the bastion server."
+    else
+        echo "File will not be deleted."
     fi
 fi
